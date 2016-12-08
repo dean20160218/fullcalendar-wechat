@@ -1,0 +1,48 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet"
+          href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet"
+          href="http://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+    <script src="http://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://cdn.bootcss.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+<div class="input-group" style="width: 50%">
+    <span class="input-group-addon">用户名</span>
+    <input id="username" type="text" class="form-control"
+           placeholder="Username">
+</div>
+<div class="input-group" style="width: 50%">
+    <span class="input-group-addon">密码</span>
+    <input id="password" type="text" class="form-control"
+           placeholder="Password">
+</div>
+<div>
+    <button type="button" class="btn btn-default" onclick="login()">登录</button>
+</div>
+</body>
+<script>
+    var UserId = "{{UserId}}";
+    function login() {
+        var form = {
+            "username": $("#username").val(),
+            "password": $("#password").val(),
+            "UserId": UserId
+        };
+        var settings = {
+            "url": "http://s3.sip365.cn/wechatopen/login",
+            "method": "POST",
+            "mimeType": "multipart/form-data",
+            "data": form
+        };
+        $.ajax(settings).done(function (response) {
+            alert(response);
+        });
+    }
+</script>
+</html>

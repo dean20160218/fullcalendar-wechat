@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <title>PM登记工时</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .invalid-style {
+            background-color: #861390;
+            /*color: black;*/
+        }
+
+        .activate-delete {
+            background-color: green!important;
+        }
+        .activate-edit{
+            background-color: red!important;
+        }
+    </style>
+</head>
+<body>
+<iframe src="http://192.168.1.69/wechat/wechat/main.html" frameborder="0" id="frame" style="float: left;"></iframe>
+
+<div id="deal" class="btn-group btn-group-justified" style="width: 100%;height: 50px;float: left;">
+    <div class='btn-group'>
+        <button id='delete' type='button' class='btn btn-default invalid-style'
+                style='margin: 0;padding: 0;height:50px;border: none;border-radius: 0;background-color:slategray;'
+                disabled='disabled'>删除
+        </button>
+    </div>
+    <div class='btn-group'>
+        <button id='addOrModify' type='button' class='btn btn-default'
+                style='border-radius: 0;height: 50px;border:none;background-color:slategray;'
+                disabled='disabled'>编辑</button>
+    </div>
+</div>
+</body>
+<script src="jquery.min.js"></script>
+<script src="bootstrap.min.js"></script>
+<script>
+    function GetQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null)return unescape(r[2]);
+        return null;
+    }
+
+    //    var pep = GetQueryString("id");
+    var windowHeight = $(window).height();
+    var windowWidth = $(window).width();
+/*    var documentHeight = $(document.body).height();
+    alert(windowHeight);
+    alert(documentHeight);
+    alert(document.body.clientHeight);*/
+
+
+    //    var toolbarHeight=$(".fc-toolbar").height();
+    //    var headerHeight=$(".fc-widget-header").height();
+    //    var height = $(window).height() - toolbarHeight-headerHeight-40-10-5;
+
+    $("#frame").css('height', windowHeight - 50);
+    $("#frame").css('width', windowWidth);
+
+    /*    function test(){
+     alert('123');
+     }*/
+    //已经选中;
+    function selectButton() {
+        console.log($(window).height());
+        console.log('data test');
+        var data = JSON.parse(sessionStorage.getItem("array"));
+        console.log(data.id);
+        if (data.id == undefined) {
+//            document.getElementById("addOrModify").innerHTML="添加";
+            $("#addOrModify").html("添加");
+        } else {
+            console.log("456");
+            $("#addOrModify").html("修改");
+        }
+        console.log("test dean");
+//        $('#delete').removeClass("invalid-style");
+//        $('#addOrModify').removeClass("invalid-style");
+//
+//        $('#delete').removeAttr("disabled");
+//        $('#delete').addClass("activate-delete");
+//
+//        $('#addOrModify').removeAttr("disabled");
+//        $('#addOrModify').addClass("activate-edit");
+    }
+
+    //取消选中;
+    function unSelectButton() {
+        $("#addOrModify").html("编辑");
+        $('#delete').attr("disabled", true);
+//        $('#delete').removeClass("activate-delete");
+        $('#addOrModify').attr("disabled", true);
+       $('#delete').removeClass("activate-delete");
+       $('#addOrModify').removeClass("activate-edit");
+
+
+        /*  $('#delete').addClass("invalid-style");
+        $('#addOrModify').addClass("invalid-style");*/
+    }
+
+    $("#delete").click(function () {
+
+        $("#frame")[0].contentWindow.deleteMain();
+
+        /* var data=JSON.parse(sessionStorage.getItem("array"));
+         console.log(data);
+         if(data.id==undefined){
+         //直接清除掉页面上之前新拖出的内容;
+         $('#calendar').fullCalendar('removeEvents', data._id);
+         }else{
+         //不仅删除页面还要删除数据库;
+         $('#calendar').fullCalendar('removeEvents', data.id);
+         $.ajax({
+         url:'http://s3.sip365.cn/wechatopen/delete_hour',
+         type:'post',
+         data:{'id':data.id},
+         success: function (result) {
+         console.log(result);
+         }
+         })
+         }
+         $('#delete').attr("disabled",true);
+         $('#addOrModify').attr("disabled",true);
+         //        unSelectButton();*/
+    });
+
+
+    $("#addOrModify").on('click', function () {
+        $("#frame")[0].contentWindow.addOrModify();
+
+        /*//新添加;
+         //之前对所有的组件的进行初始化；
+
+         $("#projectSelect").val("选择项目");
+         selectTask();
+         $("#taskSelect").val("nothing");
+         $("#type").val("活动");
+         $("#tips").val("");
+
+         var data=JSON.parse(sessionStorage.getItem("array"));
+         console.log(data);
+         if(data.id==undefined){
+         var start_date = data.start[0] + "-" + (data.start[1] + 1) + "-" + data.start[2] + "T" + data.start[3] + ":" + data.start[4];
+         var end_date = data.end[0] + "-" + (data.end[1] + 1) + "-" + data.end[2] + "T" + data.end[3] + ":" + data.end[4];
+
+         startDateRemember = start_date;
+         endDateRemember = end_date;
+         $("#selectProjectAndTask").click();
+         }else{
+         //对已有修改;
+         modifyId = data.id;
+         updateStatus = "1";
+         //回填;
+         var start_date = data.start[0] + "-" + (data.start[1] + 1) + "-" + data.start[2] + "T" + data.start[3] + ":" + data.start[4];
+         var end_date = data.end[0] + "-" + (data.end[1] + 1) + "-" + data.end[2] + "T" + data.end[3] + ":" + data.end[4];
+         startDateRemember = start_date;
+         endDateRemember = end_date;
+         // 把相关信息回填到页面中;
+         $.ajax({
+         url: 'http://s3.sip365.cn/wechatopen/refill/' + data.id,
+         type: 'get',
+         success: function (data) {
+         var data = JSON.parse(data);
+         $("#projectSelect").val(data.project_id);
+         selectTask();
+         $("#taskSelect").val(data.issue_id);
+         $("#type").val(data.type);
+         $("#tips").val(data.tips);
+         }
+         });
+         $("#selectProjectAndTask").click();
+         /!*if(start_date.indexOf("T")==10&&end_date.indexOf("T")==10){
+         $("#selectProjectAndTask").click();
+         }*!/
+         }
+
+         $('#delete').attr("disabled",true);
+         $('#addOrModify').attr("disabled",true);
+         //        unSelectButton()*/
+    });
+
+    function refresh() {
+        $("#frame").attr("src", "192.168.1.69/wechat/wechat/main.html");
+    }
+
+    /* $(document).ready(function() {
+     $("#deal").html("<div class='btn-group'>" +
+     "<button id='delete' type='button' class='btn btn-default' " +
+     "style='color:white;background-color: #003399;margin: 0;padding: 0;height:40px;border: none;border-radius: 0;' " +
+     "disabled='disabled'>删除</button></div><div class='btn-group'><button id='addOrModify' type='button' class='btn btn-default'" +
+     "style='border-radius: 0;color:white;background-color: #709899;height: 40px;border:none;' disabled='disabled'>添加/修改" +
+     "</button>" +
+     "</div>");
+     });*/
+
+//    var frameHeight;
+
+    //默认加载的时候
+
+//    loadFirst();
+    function loadFirst(num) {
+        //设置iframe的高度;
+//        设置按钮组隐藏
+//        $("#frame").css('height', windowHeight);
+//        $("#deal").fadeOut(num);
+//        $("#deal").fadeIn(num);
+    }
+
+    //处理按钮组是否显示;
+/*    function dealDivButton() {
+        $("#frame").css('height', windowHeight - 50);
+//        $("#deal").fadeIn(1000);
+    }*/
+
+    function test(){
+        console.log("test parent")
+    }
+</script>
+<!--<script src="test.js"></script>-->
+</html>

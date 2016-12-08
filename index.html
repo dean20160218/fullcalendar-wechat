@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'/>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <title style="font-size: 12px;text-align: center;">PM登记工时</title>
+    <link href='fullcalendar.css' rel='stylesheet'/>
+    <link href='fullcalendar.print.css' rel='stylesheet' media='print'/>
+    <link rel="stylesheet" href="jquery-confirm.css">
+    <script src='moment.min.js'></script>
+    <script src='jquery.min.js'></script>
+    <script>
+        var status = "0";
+        var updateStatus = "0";
+        var mainId;
+    </script>
+    <script src='fullcalendar.js'></script>
+    <script src="jquery-confirm.js"></script>
+    <script>
+        //获取url中参数;
+         function GetQueryString(name) {
+         var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+         var r = window.location.search.substr(1).match(reg);
+         if (r != null)return unescape(r[2]);
+         return null;
+         }
+        var pep = GetQueryString("id");
+
+        //获取当前日期(并且转换成规定格式);
+        function getNowFormatDate() {
+            var date = new Date();
+            var seperator1 = "-";
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var strDate = date.getDate();
+            if (month >= 1 && month <= 9) {
+                month = "0" + month;
+            }
+            if (strDate >= 0 && strDate <= 9) {
+                strDate = "0" + strDate;
+            }
+            var currentdate = year + seperator1 + month + seperator1 + strDate;
+            return currentdate;
+        }
+        var time = getNowFormatDate();
+
+
+        //获取当前窗口高度;
+        var calendarHeight = $(window).height()-49;
+        var startDateRemember = [];
+        var endDateRemember = [];
+
+        //增
+        function insertEvent(taskId, tips, type) {
+            var start_date = startDateRemember;
+            var end_date = endDateRemember;
+            if (tips != "" || taskId != "" || type != "" || start_date.indexOf("T") == 10 || end_date.indexOf("T") == 10) {
+                $.ajax({
+                    url: 'http://s3.sip365.cn/wechatopen/insert_hour',
+                    data: {
+                        'issue_id': taskId,
+                        'tips': tips,
+                        'start_time': start_date,
+                        'end_time': end_date,
+                        'type': type,
+                        'user_id': pep
+                    },
+                    type: 'post',
+                    async: false,
+                    success: function (data) {
+                        console.log(data);
+                        updateStatus = "0";
+                        window.location.href = 'http://s3.sip365.cn/wechatopen/index_redirect/' + pep;
+//                        window.location.href="index.html?id="+pep;
+                    }
+                });
+            }
+        }
+
+        //改
+        function updateEvent(taskValue, tips, workType){
+            $.ajax({
+                url: 'http://s3.sip365.cn/wechatopen/update_hour',
+                type: 'post',
+                data: {
+                    'issue_id': taskValue,
+                    'tips': tips,
+                    'issue_type': workType,
+                    'id': mainId,
+                    'type': 'update_data'
+                },
+                async: false,
+                success: function (data) {
+                    updateStatus = "0";
+                    console.log(data);
+                    window.location.href = 'http://s3.sip365.cn/wechatopen/index_redirect/' + pep;
+//                    window.location.href="index.html?id="+pep;
+
+                }
+            })
+        }
+
+        //查;
+        var events = [];
+        function selectEvent() {
+            $.ajax({
+                url: 'http://s3.sip365.cn/wechatopen/get_all_issues/' + pep,
+                type: 'get',
+                async: false,
+                success: function (data) {
+                    events = data.hours_list;
+                }
+            });
+        }
+        selectEvent();
+
+        //删;
+        function deleteMain() {
+            var data = JSON.parse(sessionStorage.getItem("array"));
+            if(data!=null){
+                if (data.id == undefined) {
+                    $('#calendar').fullCalendar('removeEvents', data._id);
+                } else {
+                    jconfirm.defaults = {
+                        closeIcon: true,
+                        title: '请确定',
+                        content: '你真的要删除吗？'
+                    };
+                    $.confirm({
+                        buttons: {
+                            specialKey: {
+                                text: '取消',
+                                action: function () {
+
+                                }
+                            },
+                            alphabet: {
+                                text: '确定',
+                                action: function () {
+                                    $('#calendar').fullCalendar('removeEvents', data.id);
+                                    $.ajax({
+                                        url: 'http://s3.sip365.cn/wechatopen/delete_hour',
+                                        type: 'post',
+                                        data: {'id': data.id},
+                                        async:false,
+                                        success: function (result) {
+                                            console.log(result);
+                                            window.location.href = 'http://s3.sip365.cn/wechatopen/index_redirect/' + pep;
+//                                            window.location.href="index.html?id="+pep;
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    });
+                }
+
+            }
+        }
+
+        //初始化页面;
+        $(document).ready(function () {
+            $('#calendar').fullCalendar({
+                selectOverlap: function (event) {
+                    return event.rendering === 'background';
+                },
+                axisFormat: 'h(:mm)a',
+                defaultView: "agendaWeek",
+                eventOverlap: false,
+                slotEventOverlap: false,
+                firstHour: 8,
+                allDaySlot: false,
+                allDay: false,
+                allDayDefault: false,
+                header: {
+                    left: 'prev,next today',
+                    right: 'month,agendaWeek,agendaDay'
+                },
+                defaultDate: time,
+                height: calendarHeight,
+                navLinks: true,
+                selectable: true,
+                selectHelper: true,
+                eventDrop: function (event, dayDelta) {
+                    var dropDays = dayDelta._data.days;
+                    var dropHours = dayDelta._data.hours;
+                    var dropMinutes = dayDelta._data.minutes;
+                    if (event.id != undefined) {
+                        $.ajax({
+                            url: 'http://s3.sip365.cn/wechatopen/update_hour',
+                            data: {
+                                'day': dropDays,
+                                'hour': dropHours,
+                                'minute': dropMinutes,
+                                'id': event.id,
+                                type: 'move'
+                            },
+                            type: 'post',
+                            async:false,
+                            success: function (data) {
+                                console.log(data);
+                            }
+                        });
+                    }
+                },
+                eventResize: function (event, dayDelta) {
+                    var dropDays = dayDelta._data.days;
+                    var dropHours = dayDelta._data.hours;
+                    var dropMinutes = dayDelta._data.minutes;
+                    if (event.id != undefined) {
+                        $.ajax({
+                            url: 'http://s3.sip365.cn/wechatopen/update_hour',
+                            data: {
+                                'day': dropDays,
+                                'hour': dropHours,
+                                'minute': dropMinutes,
+                                'id': event.id,
+                                type: 'resize'
+                            },
+                            type: 'post',
+                            async: false,
+                            success: function () {
+                            }
+                        });
+                    }
+                },
+                select: function (startDate, endDate) {
+                    if (startDate._i.length == "7") {
+                        updateStatus = "0";
+                        var title = "备注";
+                        var eventData;
+                        if (title) {
+                            eventData = {
+                                title: title,
+                                start: startDate,
+                                end: endDate
+                            };
+                            $('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+                        }
+                        $('#calendar').fullCalendar('unselect');
+                    }
+                },
+                editable: true,
+                eventLimit: true,
+                events: events
+            });
+        });
+    </script>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <script src="bootstrap.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="scroll" id='calendar' style="float: left;"></div>
+<iframe id="test" src="main.html" frameborder="0" height="50px" width="100%" style="float: left;"></iframe>
+<button style="display: none;" id="selectProjectAndTask" type="button" class="btn btn-primary" data-toggle="modal" data-target=".bs-example-modal-lg"></button>
+<div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="margin: 100px auto;">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Close</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">完善工时(以下均为必填):</h4>
+            </div>
+            <div class="modal-body" style="height: 200px;width: 100%;">
+                <select onchange="selectTask()" id="projectSelect" class="form-control">
+
+                </select>
+                <br/>
+                <select id="taskSelect" class="form-control">
+                    <option class='form-control' value='选择任务' selected="selected">选择任务</option>
+                </select>
+                <br/>
+                <select class="form-control" id="workType">
+                    <option value="需求分析" selected>需求分析</option>
+                    <option value="系统设计">系统设计</option>
+                    <option value="软件开发">软件开发</option>
+                    <option value="文档处理">文档处理</option>
+                    <option value="数据加工">数据加工</option>
+                    <option value="会议讨论">会议讨论</option>
+                    <option value="资料收集">资料收集</option>
+                    <option value="维护/配置">维护/配置</option>
+                    <option value="制图">制图</option>
+                    <option value="代码评审">代码评审</option>
+                    <option value="数据质检">数据质检</option>
+                </select>
+                <br/>
+                <input oninput="showSubmit()" type="text" class="form-control" id="tips" placeholder="填写备注">
+            </div>
+            <div class="modal-footer" style="text-align: center;">
+                <button id="submit" class="btn btn-primary" data-dismiss="modal" style="width: 100%!important;" disabled onclick="updateOrInsert()">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    //查询当前人的项目;
+    var projectList = "";
+    $.ajax({
+        url: 'http://s3.sip365.cn/wechatopen/select_project/' + pep,
+        type: 'get',
+        async: false,
+        success: function (project) {
+            projectList = "<option class='form-control' value='选择项目' selected>选择项目</option>";
+            for (var i in project) {
+                projectList += "<option class='form-control' value='" + project[i].id + "' >" + project[i].name + "</option>"
+            }
+        }
+    });
+
+
+    $("#projectSelect").html(projectList);
+
+    //查询项目的任务;
+    function selectTask() {
+        var projectName = $("#projectSelect option:selected").val();
+        var taskList = "";
+        if (projectName == "选择项目") {
+            taskList = "<option class='form-control' value='选择任务' selected>选择任务</option>";
+            $("#taskSelect").attr("disabled", "disabled");
+        } else {
+            taskList = "<option class='form-control' value='选择任务' selected>选择任务</option>";
+            $.ajax({
+                url: "http://s3.sip365.cn/wechatopen/select_issue/" + pep + "/" + projectName,
+                type: 'get',
+                async: false,
+                success: function (task) {
+                    if (task.length == 0) {
+                        taskList = "<option class='form-control' value='选择任务' selected>请确认当前项目下有任务</option>";
+                        $("#taskSelect").attr("disabled", "disabled");
+                        $("#type").attr("disabled", "disabled");
+                        $("#submit").attr("disabled", "disabled");
+                    } else {
+                        document.getElementById("taskSelect").disadled = false;
+                        $("#taskSelect").removeAttr("disabled");
+                        $("#type").removeAttr("disabled");
+                        if ($("#tips").val() != "") {
+                            $("#submit").removeAttr("disabled");
+                        }
+                        for (var i in task) {
+                            taskList += "<option class='form-control' value='" + task[i].id + "'>" + task[i].subject + "</option>";
+                        }
+                    }
+                }
+            });
+        }
+        $("#taskSelect").html(taskList);
+    }
+
+    //修改或者添加记录;
+    function updateOrInsert() {
+        //判断是否全部激活;
+        var taskValue = $("#taskSelect option:selected").val();
+        var workType = $("#workType option:selected").val();
+        var tips = $("#tips").val();
+        if(taskValue!="nothing" && tips!="" && updateStatus=="0"){
+            insertEvent(taskValue, tips, workType);
+        }else if(taskValue!="选择任务" && tips!="" && updateStatus=="1"){
+            updateEvent(taskValue, tips, workType);
+        }else{
+            alert("检查必填字段");
+        }
+    }
+
+    var height = $(window).height()-50;
+    $("#calendar").css("height", height);
+
+    function selectButton() {
+        $("#test")[0].contentWindow.selectButtonFrame();
+    }
+
+    function unSelectButton() {
+        $("#test")[0].contentWindow.unSelectButtonFrame();
+    }
+
+    //点击边界按钮;
+    function addOrModify() {
+        $("#projectSelect").val("选择项目");
+        selectTask();
+        $("#taskSelect").val("选择任务");
+        $("#workType").val("需求分析");
+        $("#tips").val("");
+        var data = JSON.parse(sessionStorage.getItem("array"));
+        var start_date = data.start[0] + "-" + (data.start[1] + 1) + "-" + data.start[2] + "T" + data.start[3] + ":" + data.start[4];
+        var end_date = data.end[0] + "-" + (data.end[1] + 1) + "-" + data.end[2] + "T" + data.end[3] + ":" + data.end[4];
+        startDateRemember = start_date;
+        endDateRemember = end_date;
+        mainId = data.id;
+
+        if (mainId == undefined) {//添加;
+            updateStatus = "0";
+            $("#selectProjectAndTask").click();
+        }else {//修改;
+            updateStatus = "1";
+            $.ajax({
+                url: 'http://s3.sip365.cn/wechatopen/refill/'+mainId,
+                type: 'get',
+                async:false,
+                success: function (result) {
+                    var result = JSON.parse(result);
+                    $("#projectSelect").val(result.project_id);
+                    selectTask();
+                    $("#taskSelect").val(result.issue_id);
+                    $("#workType").val(result.type);
+                    $("#tips").val(result.tips);
+                }
+            });
+            $("#selectProjectAndTask").click();
+        }
+    }
+
+    function showSubmit() {
+        if($("#tips").val() != "") {
+            document.getElementById("submit").disabled = false;
+        } else {
+            document.getElementById("submit").disabled = true;
+        }
+    }
+</script>
+<script>
+    //初始拷贝代码;
+    var overscroll = function (el) {
+        el.addEventListener('touchstart', function () {
+            var top = el.scrollTop
+                    , totalScroll = el.scrollHeight
+                    , currentScroll = top + el.offsetHeight
+            if (top === 0) {
+                el.scrollTop = 1
+            } else if (currentScroll === totalScroll) {
+                el.scrollTop = top - 1
+            }
+        });
+        el.addEventListener('touchmove', function (evt) {
+            if (el.offsetHeight < el.scrollHeight)
+                evt._isScroller = true
+        })
+    };
+    overscroll(document.querySelector('.scroll'));
+    document.body.addEventListener('touchmove', function (evt) {
+        if (!evt._isScroller) {
+            evt.preventDefault()
+        }
+    });
+</script>
+</html>

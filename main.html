@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .invalid-style {
+            background-color: #861390;
+            /*color: black;*/
+        }
+
+        .activate-delete {
+            background-color: rgb(173,64,51)!important;
+            color:white;
+        }
+
+        .activate-edit {
+            background-color: rgb(43,173,31)!important;
+            color:white;
+        }
+
+    </style>
+</head>
+<body>
+<div id="deal" class="btn-group btn-group-justified">
+    <!--<div class='btn-group'>-->
+        <button id='delete' type='button' class='btn btn-default invalid-style'
+                style='float:left;width:calc(50% - 0.5px);margin: 0;padding: 0;height:50px;border: none;border-radius: 0;background-color:slategray;'
+                disabled="disabled">删除
+        </button>
+    <!--</div>-->
+    <!--<div class='btn-group'>-->
+        <button id='addOrModify' type='button' class='btn btn-default'
+                style='float:right;width:calc(50% - 0.5px);border-radius: 0;height: 50px;border:none;background-color:slategray;'
+                disabled="disabled">编辑
+        </button>
+    <!--</div>-->
+</div>
+</body>
+<script src="jquery-3.1.0.min.js"></script>
+<script src="bootstrap.min.js"></script>
+<script>
+
+    function selectButtonFrame() {
+        //alert("123");
+//        $("#calendar").css('margin-top','0');
+//        $("#calendar").css('height','685px');
+        $("#deal").show();
+        var data = JSON.parse(sessionStorage.getItem("array"));
+        if (data.id == undefined) {
+            $("#addOrModify").html("添加");
+        } else {
+            $("#addOrModify").html("修改");
+        }
+
+        $('#delete').removeClass("invalid-style");
+        $('#addOrModify').removeClass("invalid-style");
+
+        $('#delete').removeAttr("disabled");
+        $('#delete').addClass("activate-delete");
+
+        $('#addOrModify').removeAttr("disabled");
+        $('#addOrModify').addClass("activate-edit");
+
+    }
+
+
+    function unSelectButtonFrame() {
+
+        $("#addOrModify").html("编辑");
+        $('#delete').attr("disabled", true);
+        $('#addOrModify').attr("disabled", true);
+        $('#delete').removeClass("activate-delete");
+        $('#addOrModify').removeClass("activate-edit");
+//        $("#deal").hide();
+//        alert(windowHeight);
+//        $("#calendar").css('height',windowHeight+50);
+
+//        sessionStorage.clear();
+    }
+
+
+    $("#delete").click(function () {
+        parent.deleteMain();
+    });
+    $("#addOrModify").on('click', function () {
+        parent.addOrModify();
+    });
+</script>
+</html>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <title>当天任务详情</title>
+    <link rel="stylesheet" href="../css/lib/bootstrap.min.css">
+    <style>
+        body{
+            background-color: snow;
+            margin: 0;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+</body>
+<script src="jquery-3.1.0.min.js"></script>
+<script src="../js/lib/react.min.js"></script>
+<script src="../js/lib/JSXTransformer.js"></script>
+<script type="text/jsx">
+    var title={
+        textAlign:'center',
+        fontSize:'20px'
+    };
+
+    var Request = new Object();
+    var ProjectDetail=[];
+    var TaskDetail=[];
+    var taskId;
+    var date;
+    var start;
+    var end;
+    var pep;
+    var tips;
+    var type;
+    var project_name;
+    var issue_name;
+    var issue_id;
+    var project_id;
+    var timePeriod;
+
+    var ActivityDetail=React.createClass({
+        render:function(){
+            return <select className="form-control" name="time_entry[activity_id]" id="time_entry_activity_id">
+                <option value="请选择" selected>请选择</option>
+                <option value="需求分析">需求分析</option>
+                <option value="系统设计">系统设计</option>
+                <option value="软件开发">软件开发</option>
+                <option value="文档处理">文档处理</option>
+                <option value="数据加工">数据加工</option>
+                <option value="会议讨论">会议讨论</option>
+                <option value="资料收集">资料收集</option>
+                <option value="维护/配置">维护/配置</option>
+                <option value="制图">制图</option>
+                <option value="代码评审">代码评审</option>
+                <option value="数据质检">数据质检</option>
+            </select>
+        }
+    });
+    var ShowProjectAndTask=React.createClass({
+        getInitialState:function(){
+            this.doProjectAjax();
+            this.doTaskAjax(taskId);
+            return{
+                ProjectDetailState:[],
+                TaskDetailState:[]
+            };
+        },
+        handleProjectChange:function(){
+            this.doTaskAjax($("#project option:selected").val());
+            this.setState({ProjectDetailState: ProjectDetail});
+        },
+        doTaskAjax: function (id) {
+            var url='http://192.168.84.112:9050/wechatopen/select_issue/'+pep+'/'+id;
+            $.ajax({
+                url:url,
+                type:'get',
+                async:false,
+                success:function(task){
+                    for(var i=0;i<task.length;i++){
+                        TaskDetail[i+1]=(<option className="form-control" value={task[i].id}>{task[i].subject}</option>)
+                    }
+                }
+            });
+        },
+        doProjectAjax:function(){
+            $.ajax({
+                url:'http://192.168.84.112:9050/wechatopen/select_project/'+pep,
+                type:'get',
+                async:false,
+                success:function(project){
+                    taskId=project[0].id;
+                    for(var i=0;i<project.length;i++){
+                        ProjectDetail[i+1]=(<option  className="form-control" value={project[i].id}>{project[i].name}</option>)
+                    }
+                }
+            });
+        },
+        render:function(){
+            return <div>
+                <label>项目</label>
+                <select id="project" className="form-control" onChange={this.handleProjectChange}>{ProjectDetail}</select>
+                <label>任务</label>
+                <select id="task" className="form-control">{TaskDetail}</select>
+            </div>
+        }
+    });
+
+    var Main=React.createClass({
+        GetRequest: function () {
+            var url = location.search;
+            var theRequest = new Object();
+            if (url.indexOf("?") != -1) {
+                var str = url.substr(1);
+                var strs = str.split("&");
+                for(var i = 0; i < strs.length; i ++) {
+                    theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+                }
+            }
+            return theRequest;
+        },
+        componentDidMount:function(){
+            $("#date").val(date);
+            $("#startTime").val(start);
+            $("#endTime").val(end);
+            var sArr = start.split(":");
+            var eArr = end.split(":");
+            timePeriod=(eArr[0]-sArr[0])+(eArr[1]-sArr[1])/60;
+        },
+        submitTaskInfo:function(){
+            $.ajax({
+                url:'http://192.168.84.112:9050/wechatopen/insert_hour',
+                data:{
+                    'issue_id':$("#task option:selected").val(),
+                    'date':$("#date").val(),
+                    'tips':$("#aside").val(),
+                    'start_time':$("#startTime").val(),
+                    'end_time':$("#endTime").val(),
+                    'type':$("#time_entry_activity_id option:selected").val(),
+                    'user_id':pep},
+                type:'post',
+                success:function(data){
+                    console.log(data);
+                    alert("保存成功!");
+                }
+            })
+        },
+        submitTaskInfoAndContinue:function(){
+            this.submitTaskInfo();
+            alert("保存成功!");
+            window.location.href="index.html";
+        },
+        deleteTaskInfo:function(){
+            alert("删除成功");
+        },
+        render: function(){
+            Request =this.GetRequest();
+            date=Request['date'];
+            start=Request['start'];
+            end=Request['end'];
+            pep=Request['pep'];
+            tips=Request['tips'];
+            type=Request['type'];
+            project_name=Request['project_name'];
+            issue_name=Request['issue_name'];
+            issue_id=Request['issue_id'];
+            project_id=Request['project_id'];
+
+            return <div>
+                <form>
+                    <header style={title}>登记工时</header>
+                    <label for="date">登记日期:</label>
+                    <input className="form-control" type="date" id="date"/>
+                    <br/>
+                    <label>开始时间:</label>
+                    <input id="startTime" className="form-control" type="time"/>
+                    <label>结束时间:</label>
+                    <input id="endTime" className="form-control" type="time"/>
+                    <br/>
+                    <ShowProjectAndTask ref="contact"></ShowProjectAndTask>
+                    <label>活动</label>
+                    <ActivityDetail></ActivityDetail>
+                    <br/>
+                    <label for="aside">注释:</label>
+                    <textarea className="form-control" name="" id="aside" cols="30" rows="3"></textarea>
+                    <br/>
+                    <input onClick={this.submitTaskInfo} className="form-control btn-primary btn-block" type="button" value="创建"/>
+                    <input onClick={this.submitTaskInfoAndContinue} className="form-control btn-primary btn-block" type="button" value="创建并且继续"/>
+                    <input onClick={this.deleteTaskInfo} className="form-control btn-primary btn-block" type="button" value="删除"/>
+                </form>
+            </div>
+        }
+    });
+    React.render(<Main></Main>,document.body);
+</script>
+</html>
